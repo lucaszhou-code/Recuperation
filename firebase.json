@@ -1,0 +1,34 @@
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "hosting": {
+    "public": "firebase-public",
+    "ignore": [
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache"
+          },
+          {
+            "key": "X-Content-Type-Options",
+            "value": "nosniff"
+          },
+          {
+            "key": "Referrer-Policy",
+            "value": "strict-origin-when-cross-origin"
+          }
+        ]
+      }
+    ],
+    "predeploy": [
+      "node -e \"require('fs').mkdirSync('firebase-public',{recursive:true});require('fs').copyFileSync('index.html','firebase-public/index.html')\""
+    ]
+  }
+}

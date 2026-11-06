@@ -16,12 +16,12 @@ fieldset:disabled{opacity:.6}.tabs{flex-wrap:wrap}#login{max-width:520px}#tests{
 <section id="recuperation" role="tabpanel" aria-labelledby="tab-recuperation">
 <div class="heading"><div><p class="eyebrow">ACADEMIC SUPPORT / MY WORKSPACE</p><h1>Recuperation Management</h1><p class="muted">Create and manage your student reports.</p></div><button class="btn primary" id="add" hidden>+ Add student report</button></div>
 <div id="notice" class="notice" hidden></div><div id="message" role="status" class="toast" hidden></div>
-<section class="panel rules" id="login" style="margin-top:25px"><h2>Teacher sign in</h2><p class="muted">Use the teacher account provided by your school.</p><form id="loginForm"><div class="field" style="margin-top:18px"><label for="email">School email</label><input id="email" type="email" autocomplete="username" required maxlength="254"></div><div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required maxlength="256"></div><button class="btn primary" id="loginButton">Sign in</button> <button class="btn" type="button" id="demo">Try fictional demo</button></form></section>
+<section class="panel rules" id="login" style="margin-top:25px"><h2>Teacher sign in</h2><p class="muted">Sign in with your approved Google account.</p><button class="btn primary" id="loginButton" style="margin-top:18px" disabled>Sign in with Google</button><p id="authHelp" class="muted" role="status">Loading sign-in…</p></section>
 <div id="workspace" hidden><section id="stats" class="stats" aria-label="My report counts" style="margin-top:25px"></section><p class="count-note">Only your reports are included. Each report records one status selected by you.</p><section class="panel"><div class="panel-top"><div><h2>My student reports</h2><p>Choose a status first, then enter only the relevant details.</p></div><span id="recordCount" class="muted"></span></div><div class="filters"><input id="search" type="search" placeholder="Search student name…" aria-label="Search my reports"><select id="classFilter" aria-label="Class"><option value="">All classes</option></select><select id="subjectFilter" aria-label="Subject"><option value="">All subjects</option></select><select id="statusFilter" aria-label="Status"><option value="">All statuses</option></select><button class="btn" id="clear">Clear</button></div><div class="table-wrap"><table><caption class="visually-hidden">My recuperation reports</caption><thead><tr><th scope="col">Student</th><th scope="col">Class / subject</th><th scope="col">Status</th><th scope="col">Report details</th><th scope="col">Actions</th></tr></thead><tbody id="rows"></tbody></table></div><div id="empty" class="empty" hidden>No reports yet. Add your first student report.</div><div class="panel-foot" id="tableFoot">Reports belong to the signed-in teacher.</div></section></div>
 </section><footer><span>EAR Teacher Portal · CS Club</span></footer></main>
 <dialog id="editor" aria-labelledby="editorTitle"><div class="dialog-top"><div><h2 id="editorTitle">Add student report</h2><p class="muted">Start with the student's status.</p></div><button type="button" class="btn" id="closeX" aria-label="Close report">✕</button></div><form id="recordForm"><input type="hidden" id="reportId"><input type="hidden" id="revision"><div class="field" style="margin-top:20px"><label for="status">1. Student status</label><select id="status" required><option value="">Choose a status…</option></select></div><fieldset id="details" hidden disabled style="border:0;padding:0;margin:0"><legend class="visually-hidden">Student and report details</legend><div class="field"><label for="existing">2. Student</label><select id="existing"><option value="">Add a new student</option></select><small class="muted">Choose a student from your previous reports to fill their details.</small></div><div class="form-grid"><div class="field"><label for="name">Student name</label><input id="name" required maxlength="100" autocomplete="off"></div><div class="field"><label for="className">Class</label><input id="className" list="classChoices" required maxlength="30" placeholder="10A" autocomplete="off"><datalist id="classChoices"></datalist></div><div class="field"><label for="subject">Subject</label><input id="subject" list="subjectChoices" required maxlength="80" autocomplete="off"><datalist id="subjectChoices"></datalist></div></div><div id="gradeFields"><div class="field"><label for="grade">3. Current grade (0–100)</label><input id="grade" type="number" min="0" max="100" step="0.1"></div></div><div id="absenceFields" class="form-grid" hidden><div class="field"><label for="absences">3. Classes missed</label><input id="absences" type="number" min="0" max="10000" step="1"></div><div class="field"><label for="total">Total classes held</label><input id="total" type="number" min="1" max="10000" step="1"></div></div><p id="calculation" class="muted" aria-live="polite"></p><p class="count-note">Your selected status is recorded as entered. Use your school's rules to choose it.</p></fieldset><p id="formError" class="error" role="alert" hidden></p><div class="actions"><label style="margin-right:auto;font-weight:400"><input type="checkbox" id="addAnother"> Add another after saving</label><button type="button" class="btn" id="cancel">Cancel</button><button id="save" class="btn primary" type="submit" disabled>Save report</button></div></form></dialog>
 <dialog id="removeDialog" aria-labelledby="removeTitle"><h2 id="removeTitle">Remove this report?</h2><p id="removeDescription"></p><p class="muted">This removes it from your overview. Other reports are unchanged.</p><p id="removeError" class="error" hidden role="alert"></p><div class="actions"><button id="removeCancel" class="btn">Cancel</button><button id="removeConfirm" class="btn primary">Remove report</button></div></dialog>
-<script>
+<script type="module">
 'use strict';
 const $=id=>document.getElementById(id),labels=['Recuperation','Danger of recuperation','Recuperation by absence','Danger of recuperation by absence'];
 let user=null,reports=[],demoMode=false,pendingRemove=null,lastFocus=null,busy=false,epoch=0;
@@ -31,9 +31,29 @@ function say(text,error=false){$('message').textContent=text;$('message').classN
 function setView(v){for(const n of ['recuperation','tests']){$(n).hidden=n!==v;$('tab-'+n).setAttribute('aria-selected',String(n===v));$('tab-'+n).tabIndex=n===v?0:-1;}}
 function badge(r){return '<span class="badge s'+r.status+'">'+esc(labels[r.status])+'</span>';}
 function own(){return user?reports.filter(r=>r.owner_id===user.id):[];}
-async function api(path,method='GET',body){const res=await fetch('./api/'+path,{method,credentials:'same-origin',cache:'no-store',headers:body?{'Content-Type':'application/json'}:{},body:body?JSON.stringify(body):undefined});if(!res.headers.get('content-type')?.includes('application/json'))throw Error('Teacher server is not connected. The fictional demo is available below.');const data=await res.json();if(!res.ok){if(res.status===401&&path!=='login')clearSession();throw Error(data.error||'The request could not be completed.');}return data;}
-function clearSession(){epoch++;user=null;reports=[];demoMode=false;defaults={className:'',subject:'',total:''};$('identity').textContent='';$('workspace').hidden=true;$('add').hidden=true;$('logout').hidden=true;$('login').hidden=false;$('rows').innerHTML='';$('stats').innerHTML='';$('recordForm').reset();$('editor').close();$('removeDialog').close();$('password').value='';$('notice').hidden=true;pendingRemove=null;}
-function enter(nextUser,nextReports,isDemo){epoch++;user=nextUser;reports=nextReports;demoMode=isDemo;$('login').hidden=true;$('workspace').hidden=false;$('add').hidden=false;$('logout').hidden=false;$('logout').textContent=isDemo?'Exit demo':'Sign out';$('identity').textContent=isDemo?'Fictional demo':nextUser.name;$('notice').hidden=!isDemo;$('notice').textContent='Fictional demo — changes last only in this tab. This is not teacher authentication. Real reports require the school’s teacher server.';$('tableFoot').textContent=isDemo?'Fictional data only. Nothing in this demo is uploaded or saved.':'Your reports are checked against your signed-in account on the server.';for(const k of ['search','classFilter','subjectFilter','statusFilter'])$(k).value='';$('password').value='';$('message').hidden=true;render();}
+let auth,db,fb;
+async function api(path,method='GET',body){
+ const account=auth.currentUser;
+ if(!account)throw Error('Please sign in again.');
+ const base=fb.collection(db,'teachers',account.uid,'reports');
+ if(method==='POST'){
+  const data={...body,owner_id:account.uid,revision:0};
+  const ref=await fb.addDoc(base,data); return {...data,id:ref.id};
+ }
+ const id=decodeURIComponent(path.split('/')[1]);
+ const ref=fb.doc(base,id);
+ return fb.runTransaction(db,async tx=>{
+  const snap=await tx.get(ref);
+  if(!snap.exists())throw Error('Report no longer exists. Sign out and back in to refresh.');
+  const previous=snap.data();
+  if(previous.revision!==body.revision)throw Error('This report changed elsewhere. Sign out and back in to refresh.');
+  if(method==='DELETE'){tx.delete(ref);return;}
+  const data={...body,owner_id:account.uid,revision:previous.revision+1};
+  tx.set(ref,data);return {...data,id};
+ });
+}
+function clearSession(){epoch++;user=null;reports=[];demoMode=false;defaults={className:'',subject:'',total:''};$('identity').textContent='';$('workspace').hidden=true;$('add').hidden=true;$('logout').hidden=true;$('login').hidden=false;$('rows').innerHTML='';$('stats').innerHTML='';$('recordForm').reset();$('editor').close();$('removeDialog').close();$('notice').hidden=true;pendingRemove=null;}
+function enter(nextUser,nextReports,isDemo){epoch++;user=nextUser;reports=nextReports;demoMode=isDemo;$('login').hidden=true;$('workspace').hidden=false;$('add').hidden=false;$('logout').hidden=false;$('logout').textContent=isDemo?'Exit demo':'Sign out';$('identity').textContent=isDemo?'Fictional demo':nextUser.name;$('notice').hidden=!isDemo;$('notice').textContent='Fictional demo — changes last only in this tab. This is not teacher authentication. ';$('tableFoot').textContent=isDemo?'Fictional data only. Nothing in this demo is uploaded or saved.':'Your reports are checked against your signed-in account on the server.';for(const k of ['search','classFilter','subjectFilter','statusFilter'])$(k).value='';$('message').hidden=true;render();}
 function options(id,key,title){const el=$(id),old=el.value;el.innerHTML='<option value="">'+title+'</option>'+[...new Set(own().map(r=>r[key]))].sort().map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');if([...el.options].some(o=>o.value===old))el.value=old;}
 function render(){const data=own();options('classFilter','className','All classes');options('subjectFilter','subject','All subjects');$('stats').innerHTML='<div class="stat total"><span>My reports</span><strong>'+data.length+'</strong><small>Only this teacher’s reports</small></div>'+labels.map((s,i)=>'<button class="stat s'+i+'" data-status="'+i+'"><span>'+['Grade recuperation','Grade warning','Absence recuperation','Absence warning'][i]+'</span><strong>'+data.filter(r=>r.status===i).length+'</strong><small>View reports ↗</small></button>').join('');renderTable();}
 function renderTable(){const data=own(),q=$('search').value.toLowerCase(),cl=$('classFilter').value,su=$('subjectFilter').value,st=$('statusFilter').value;const filtered=data.filter(r=>r.name.toLowerCase().includes(q)&&(!cl||r.className===cl)&&(!su||r.subject===su)&&(st===''||r.status===Number(st)));$('recordCount').textContent=filtered.length+' reports';$('empty').hidden=!!filtered.length;$('empty').textContent=data.length?'No reports match these filters.':'No reports yet. Add your first student report.';$('rows').innerHTML=filtered.map(r=>'<tr><td><div class="student"><span class="avatar" aria-hidden="true">'+esc(r.name.split(/\s+/).slice(0,2).map(s=>s[0]).join(''))+'</span><strong>'+esc(r.name)+'</strong></div></td><td><strong>'+esc(r.subject)+'</strong><small>Class '+esc(r.className)+'</small></td><td>'+badge(r)+'</td><td>'+(r.status<2?'<strong>'+r.grade+' / 100</strong>':'<strong>'+r.absences+' missed</strong><small>'+r.total+' total · '+(r.absences/r.total*100).toFixed(1)+'%</small>')+'</td><td><button class="btn" data-edit="'+esc(r.id)+'" aria-label="Edit report for '+esc(r.name)+'">Edit</button><button class="btn" data-remove="'+esc(r.id)+'" aria-label="Remove report for '+esc(r.name)+'">Remove</button></td></tr>').join('');}
@@ -52,8 +72,89 @@ for(const id of ['search','classFilter','subjectFilter','statusFilter'])$(id).on
 document.addEventListener('click',e=>{const el=e.target.closest('button');if(!el)return;if(el.dataset.view)setView(el.dataset.view);if(el.dataset.edit)openEditor(el.dataset.edit);if(el.dataset.remove)requestRemove(el.dataset.remove);if(el.dataset.status!==undefined){$('statusFilter').value=el.dataset.status;renderTable();}});
 document.querySelector('[role=tablist]').onkeydown=e=>{const tabs=[...document.querySelectorAll('[role=tab]')],i=tabs.indexOf(document.activeElement);if(i<0)return;const n=e.key==='ArrowRight'?(i+1)%2:e.key==='ArrowLeft'?(i+1)%2:e.key==='Home'?0:e.key==='End'?1:null;if(n!==null){e.preventDefault();setView(tabs[n].dataset.view);tabs[n].focus();}};
 for(const id of ['status','statusFilter'])$(id).innerHTML+=labels.map((s,i)=>'<option value="'+i+'">'+s+'</option>').join('');
-$('loginForm').onsubmit=async e=>{e.preventDefault();$('loginButton').disabled=true;try{await api('login','POST',{email:$('email').value.trim(),password:$('password').value});const me=await api('me'),data=await api('reports');enter(me,data,false);}catch(err){say(err.message,true);$('password').value='';}finally{$('loginButton').disabled=false;}};
-$('logout').onclick=async()=>{if(busy)return;try{if(!demoMode)await api('logout','POST',{});clearSession();say('Signed out.');}catch(err){say('Sign-out failed. Please try again. '+err.message,true);}};
-$('demo').onclick=()=>enter({id:'fictional-demo',name:'Demo teacher'},[{id:'demo-1',owner_id:'fictional-demo',name:'Ana Silva',className:'10A',subject:'Mathematics',status:0,grade:52,absences:null,total:null,revision:0},{id:'demo-2',owner_id:'fictional-demo',name:'Lucas Costa',className:'10A',subject:'Mathematics',status:3,grade:null,absences:12,total:60,revision:0}],true);
-(async()=>{if(location.protocol==='file:'){say('Standalone preview: select “Try fictional demo.” Private teacher accounts require the included server.');return;}try{const me=await api('me');const data=await api('reports');enter(me,data,false);}catch(err){if(!err.message.includes('Sign in'))say(err.message,true);}})();
+
+// ===== REPLACE THESE VALUES WITH YOUR FIREBASE WEB APP CONFIG =====
+const FIREBASE_API_KEY = 'AIzaSyDqxteiXSDCtxlMt7BFVuIcm7rU8Tn7Ae4';
+const FIREBASE_AUTH_DOMAIN = 'absence-recuperation.firebaseapp.com';
+const FIREBASE_PROJECT_ID = 'absence-recuperation';
+const FIREBASE_STORAGE_BUCKET = 'absence-recuperation.firebasestorage.app';
+const FIREBASE_MESSAGING_SENDER_ID = '995081412010';
+const FIREBASE_APP_ID = '1:995081412010:web:345317183cf2d824a21fd3';
+const firebaseConfig = {
+ apiKey: FIREBASE_API_KEY,
+ authDomain: FIREBASE_AUTH_DOMAIN,
+ projectId: FIREBASE_PROJECT_ID,
+ storageBucket: FIREBASE_STORAGE_BUCKET,
+ messagingSenderId: FIREBASE_MESSAGING_SENDER_ID,
+ appId: FIREBASE_APP_ID
+};
+// ===== END CONFIGURATION =====
+function authError(err){
+ if(err.code==='auth/popup-blocked')return 'Allow pop-ups for this website, then try again.';
+ if(err.code==='auth/unauthorized-domain')return 'Add this website domain in Firebase Authentication > Settings > Authorized domains.';
+ if(err.code==='permission-denied')return 'Access denied. Ask the administrator to check your teacher approval and Firestore rules.';
+ return err.message||'Could not connect. Please try again.';
+}
+$('loginButton').onclick=async()=>{
+ $('loginButton').disabled=true;
+ try{
+  await fb.setPersistence(auth,fb.browserSessionPersistence);
+  const provider=new fb.GoogleAuthProvider();
+  provider.setCustomParameters({prompt:'select_account'});
+  await fb.signInWithPopup(auth,provider);
+ }catch(err){say(authError(err),true);}
+ finally{$('loginButton').disabled=false;}
+};
+$('logout').onclick=async()=>{
+ if(busy)return;
+ try{await fb.signOut(auth);clearSession();say('Signed out.');}
+ catch(err){say(authError(err),true);}
+};
+async function startFirebase(){
+ if(Object.values(firebaseConfig).some(v=>v.startsWith('YOUR_'))){
+  $('authHelp').textContent='Setup needed: replace the six Firebase configuration variables in index.html.';
+  return;
+ }
+ if(location.protocol==='file:'){
+  $('authHelp').textContent='Open this page through a local web server or Hosting to use Google sign-in.';
+  return;
+ }
+ try{
+  const [app,authentication,firestore]=await Promise.all([
+   import('https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js'),
+   import('https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js'),
+   import('https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js')
+  ]);
+  fb={...authentication,...firestore};
+  const instance=app.initializeApp(firebaseConfig);
+  auth=fb.getAuth(instance);db=fb.getFirestore(instance);
+  $('authHelp').textContent='Only approved teachers can access reports.';
+  $('loginButton').disabled=false;
+  fb.onAuthStateChanged(auth,async account=>{
+   clearSession();
+   const currentEpoch=epoch;
+   if(!account)return;
+   $('loginButton').disabled=true;
+   $('authHelp').textContent='Checking teacher access…';
+   try{
+    const approval=await fb.getDoc(fb.doc(db,'teachers',account.uid));
+    if(!approval.exists()||approval.data().active!==true){
+     throw Error('Teacher approval needed. Your UID: '+account.uid+'. Ask the administrator to create teachers/'+account.uid+' with active set to true (boolean).');
+    }
+    const snapshot=await fb.getDocs(fb.collection(db,'teachers',account.uid,'reports'));
+    if(epoch!==currentEpoch||auth.currentUser?.uid!==account.uid)return;
+    enter({id:account.uid,name:account.displayName||account.email},snapshot.docs.map(d=>({...d.data(),id:d.id})),false);
+    $('tableFoot').textContent='Your reports are stored in your private Firestore workspace.';
+   }catch(err){
+    if(epoch!==currentEpoch)return;
+    await fb.signOut(auth);
+    say(authError(err),true);
+   }finally{
+    $('loginButton').disabled=false;
+    $('authHelp').textContent='Only approved teachers can access reports.';
+   }
+  });
+ }catch(err){$('authHelp').textContent='Firebase could not load. Check your configuration and internet connection.';say(authError(err),true);}
+}
+startFirebase();
 </script></body></html>

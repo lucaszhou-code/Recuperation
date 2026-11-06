@@ -1,0 +1,44 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null
+        && request.auth.token.email_verified == true
+        && request.auth.token.firebase.sign_in_provider == 'google.com';
+    }
+    function owner(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+    function approved(uid) {
+      return owner(uid)
+        && get(/databases/$(database)/documents/teachers/$(uid)).data.active == true;
+    }
+    function validReport(d, uid) {
+      return d.keys().hasAll(['name','className','subject','status','grade','absences','total','owner_id','revision'])
+        && d.keys().hasOnly(['name','className','subject','status','grade','absences','total','owner_id','revision'])
+        && d.owner_id == uid
+        && d.name is string && d.name.size() > 0 && d.name.size() <= 100
+        && d.className is string && d.className.size() > 0 && d.className.size() <= 30
+        && d.subject is string && d.subject.size() > 0 && d.subject.size() <= 80
+        && d.status is int && d.status >= 0 && d.status <= 3
+        && d.revision is int && d.revision >= 0
+        && ((d.status < 2 && d.grade is number && d.grade >= 0 && d.grade <= 100
+              && d.absences == null && d.total == null)
+          || (d.status >= 2 && d.grade == null
+              && d.total is int && d.total >= 1 && d.total <= 10000
+              && d.absences is int && d.absences >= 0 && d.absences <= d.total));
+    }
+    match /teachers/{uid} {
+      allow get: if owner(uid);
+      allow list, write: if false;
+      match /reports/{reportId} {
+        allow read: if approved(uid);
+        allow create: if approved(uid) && validReport(request.resource.data, uid)
+          && request.resource.data.revision == 0;
+        allow update: if approved(uid) && validReport(request.resource.data, uid)
+          && request.resource.data.revision == resource.data.revision + 1;
+        allow delete: if approved(uid);
+      }
+    }
+  }
+}
