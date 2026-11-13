@@ -1,73 +1,41 @@
-# EAR Teacher Portal — Firebase setup
+# EAR Teacher Portal — Firebase and admin setup
 
-This branch prepares Google sign-in and private Firestore reports. It has not been deployed. The existing appearance, status-first form, editing/removal and blank Tests Management section are retained. The old Python server is not used by this version.
+Firebase loads directly in index.html from Google's CDN. No local Firebase installation is needed when you use GitHub Pages and Firebase Console.
 
-## 1. Add your web app configuration
-In Firebase Console, open Project settings > General > Your apps. Register a Web app (</>) if necessary and find its firebaseConfig.
-Edit index.html on the firebase-setup branch. Search for REPLACE THESE VALUES.
-Replace the quoted placeholders for all six variables:
-- FIREBASE_API_KEY → apiKey
-- FIREBASE_AUTH_DOMAIN → authDomain
-- FIREBASE_PROJECT_ID → projectId
-- FIREBASE_STORAGE_BUCKET → storageBucket
-- FIREBASE_MESSAGING_SENDER_ID → messagingSenderId
-- FIREBASE_APP_ID → appId
+## Activate this update
+1. In Firebase Authentication > Sign-in method, enable **Email/Password**. Keep Google enabled.
+2. In Firestore Database > Rules, paste the complete firestore.rules file from this repository and click Publish. Saving the file to GitHub does not publish database rules.
+3. Open the updated website and sign in with Google as **lucas.zhou@ear.com.br**. The Admin tab appears for that verified account.
+4. Under Admin > Set my admin password, enter your own password. Firebase requires at least six characters (your project's policy may require more). The requested four-character password cannot be used. No admin password is embedded in HTML.
+5. You can subsequently use either Google or email/password to sign in.
 
-Keep the quotes. Use the values Firebase gives you; do not guess the bucket or domain.
-These are browser app configuration values. Do not put a service-account private key in HTML or GitHub.
+If the updated site does not appear, confirm your host deployed the latest main branch, then refresh. With Firebase Hosting, deploying GitHub source and publishing rules are separate actions.
 
-## 2. Install the access rules first
-Open Firestore Database > Rules. Replace the rules with the complete contents of firestore.rules and click Publish. This assumes the default Firestore database.
-The rules require Google authentication, a verified email, an approved teacher document and ownership of the teacher workspace. No client can approve themselves.
-If this Firebase project already contains another app's data/rules, merge the rules carefully rather than replacing its unrelated rules.
+## Create accounts
+In Admin, enter a teacher's name, email and initial password, then choose Create account.
+The account is created in Firebase Authentication and an approved teachers/UID record is created automatically. You remain signed in as admin.
+Share the initial password privately with the teacher. Passwords are sent to Firebase Authentication, not stored in Firestore.
+If the email already exists, use Firebase Console to manage that existing account. This form creates new accounts only.
+If approval fails, the page attempts to remove the newly created login account. If cleanup also fails, it displays the UID for administrator review.
 
-## 3. Authorize the website domain
-Authentication > Settings > Authorized domains:
-- Firebase Hosting: confirm YOUR_PROJECT_ID.web.app is allowed.
-- GitHub Pages (if used later): add lucaszhou-code.github.io (no https or /Recuperation).
-- Local testing: add localhost manually if absent.
-Google must be enabled under Authentication > Sign-in method.
+## Access and privacy
+The admin permission requires the exact email lucas.zhou@ear.com.br and a verified email in the Firebase authentication token. Merely typing that email into a form does not grant admin access.
+Only that admin can create or update teacher approval documents through the website. Approved teachers can use Google or email/password.
+Reports remain under teachers/UID/reports and only their owner can read, edit or delete them through the app, including when the administrator is signed in.
+Firebase project administrators can still access data through Firebase Console.
+To revoke access, set the teacher document's active field to false in Firebase Console. This blocks later database requests, but cannot take back already viewed information.
+Firebase client account registration can be called outside this UI. Such accounts do not gain portal access unless approved; Firestore rules enforce approval.
 
-## 4. Approve teachers manually
-After a teacher first tries Google sign-in, Firebase Authentication > Users shows their UID. The portal also displays the UID when approval is missing.
-In Firestore > Data:
-1. Create collection teachers.
-2. Document ID: paste the teacher's exact Authentication UID.
-3. Add field active, type boolean, value true.
-4. Save, then have the teacher sign in again.
-Do this for your own account first. You do NOT need to create the reports subcollection; the first report creates it.
-Set active to false to block future database access. Previously viewed information cannot be taken back from someone.
-Only approve actual teachers. School email alone does not prove someone is a teacher.
-Each teacher's reports live at teachers/TEACHER_UID/reports/REPORT_ID.
-Project administrators with Firebase Console access can still access database data.
+## Firebase configuration
+The six FIREBASE_* variables in index.html retain your existing web app configuration.
+Keep the website domain under Authentication > Settings > Authorized domains.
+Never put service-account credentials or an administrator password into HTML.
 
-## 5. Test before school use
-Serve the folder over HTTP, not by double-clicking index.html. For example, use VS Code Live Server on localhost.
-With two approved test Google accounts and fictional students:
-- Teacher A creates, edits and removes a report.
-- Teacher B sees an empty independent workspace.
-- Sign out: report rows and editor fields disappear.
-- An unapproved Google account gets no report access.
-Use Firestore Rules Playground or Emulator Suite to verify: unauthenticated requests fail; A cannot read/write/delete B's report; clients cannot change teachers/UID approval documents; invalid grades/absences fail.
-Google sign-in and deployed rules have not been live-tested against your project yet. Existing demo or Python-server records are not migrated automatically.
+## Verification
+JavaScript syntax and mocked account creation tests passed, covering retained admin session, rejection of other/unverified admin identities, cleanup after failed approval, password minimum, and password linking.
+Live Google/email sign-in, the rendered Admin tab and deployed Firestore rules still need testing against your Firebase project.
+Before using real student data, test with two fictional teacher accounts: each can manage its own reports and cannot access another teacher's records. In Firestore Rules Playground or Emulator Suite, also check that an ordinary teacher cannot modify approvals and that an unverified admin email is denied admin access.
 
-## 6. Publish later
-Choose one website host:
-A. Firebase Hosting with GitHub storing the source (recommended if you want to use the Hosting you already created).
-B. GitHub Pages hosting index.html, with Firebase providing Authentication and Firestore.
-You do not need both website hosts.
-
-For Firebase Hosting, after configuration and tests:
-- Download/clone this branch.
-- Install Firebase CLI, then run firebase login.
-- Run firebase use --add and select your Firebase project.
-- Run firebase deploy --only firestore:rules,hosting.
-The included firebase.json uploads only index.html; it does not upload the old server or instructions.
-For future automatic GitHub deployments, run firebase init hosting:github and follow Firebase's setup prompts for lucaszhou-code/Recuperation. Choose the intended deployment branch; no build step is needed.
-The generated Hosting workflow deploys the website, not Firestore rules. Publish rule changes separately.
-Do not merge to main or enable automatic deployment until placeholders are replaced and testing passes.
-
-Official references:
-- https://firebase.google.com/docs/auth/web/google-signin
+Official documentation:
+- https://firebase.google.com/docs/auth/web/password-auth
 - https://firebase.google.com/docs/firestore/security/rules-conditions
-- https://firebase.google.com/docs/hosting/github-integration
