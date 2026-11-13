@@ -11,12 +11,27 @@
 
 fieldset:disabled{opacity:.6}.tabs{flex-wrap:wrap}#login{max-width:520px}#tests{min-height:350px}#rows .btn{margin:2px}#calculation{font-size:14px}</style></head>
 <body><header><div class="brand"><span class="logo" aria-hidden="true">E</span><span>EAR Teacher Portal<small>TEACHER WORKSPACE</small></span></div><div><span id="identity" class="privacy"></span> <button id="logout" class="btn" hidden>Sign out</button></div></header>
-<main><div class="tabs" role="tablist" aria-label="Portal sections"><button class="tab" role="tab" id="tab-recuperation" aria-controls="recuperation" aria-selected="true" data-view="recuperation">Recuperation Management</button><button class="tab" role="tab" id="tab-tests" aria-controls="tests" aria-selected="false" tabindex="-1" data-view="tests">Tests Management</button></div>
+<main><div class="tabs" role="tablist" aria-label="Portal sections"><button class="tab" role="tab" id="tab-recuperation" aria-controls="recuperation" aria-selected="true" data-view="recuperation">Recuperation Management</button><button class="tab" role="tab" id="tab-tests" aria-controls="tests" aria-selected="false" tabindex="-1" data-view="tests">Tests Management</button><button class="tab" role="tab" id="tab-admin" aria-controls="admin" aria-selected="false" tabindex="-1" data-view="admin" hidden>Admin</button></div>
+<section id="admin" role="tabpanel" aria-labelledby="tab-admin" hidden>
+<div class="heading"><div><p class="eyebrow">ACCOUNT MANAGEMENT</p><h1>Admin</h1><p class="muted">Create teacher accounts with private report workspaces.</p></div></div>
+<div class="panel rules" style="margin-top:25px">
+<h2>Create teacher account</h2>
+<form id="createAccountForm">
+<fieldset id="accountFields" style="border:0;padding:0;margin-top:18px">
+<div class="field"><label for="newTeacherName">Teacher name</label><input id="newTeacherName" required maxlength="100" autocomplete="off"></div>
+<div class="field"><label for="newTeacherEmail">Email</label><input id="newTeacherEmail" type="email" required maxlength="254" autocomplete="off"></div>
+<div class="field"><label for="newTeacherPassword">Initial password</label><input id="newTeacherPassword" type="password" required minlength="6" maxlength="4096" autocomplete="new-password"><small class="muted">At least 6 characters, or longer if required by your Firebase password policy. Share the password privately with the teacher.</small></div>
+<button class="btn primary" type="submit">Create account</button>
+</fieldset></form><p id="accountResult" role="status" hidden></p>
+</div>
+<div class="panel rules" style="margin-top:20px"><h2>Set my admin password</h2><p class="muted">Add email/password sign-in to your verified admin account.</p>
+<form id="adminPasswordForm"><div class="field" style="margin-top:18px"><label for="adminPassword">New password</label><input id="adminPassword" type="password" required minlength="6" maxlength="4096" autocomplete="new-password"></div><button id="adminPasswordButton" type="submit" class="btn">Save my password</button></form>
+<p id="adminPasswordResult" role="status" hidden></p></div></section>
 <section id="tests" role="tabpanel" aria-labelledby="tab-tests" hidden></section>
 <section id="recuperation" role="tabpanel" aria-labelledby="tab-recuperation">
 <div class="heading"><div><p class="eyebrow">ACADEMIC SUPPORT / MY WORKSPACE</p><h1>Recuperation Management</h1><p class="muted">Create and manage your student reports.</p></div><button class="btn primary" id="add" hidden>+ Add student report</button></div>
 <div id="notice" class="notice" hidden></div><div id="message" role="status" class="toast" hidden></div>
-<section class="panel rules" id="login" style="margin-top:25px"><h2>Teacher sign in</h2><p class="muted">Sign in with your approved Google account.</p><button class="btn primary" id="loginButton" style="margin-top:18px" disabled>Sign in with Google</button><p id="authHelp" class="muted" role="status">Loading sign-in…</p></section>
+<section class="panel rules" id="login" style="margin-top:25px"><h2>Teacher sign in</h2><p class="muted">Sign in with your approved Google account.</p><button class="btn primary" id="loginButton" style="margin-top:18px" disabled>Sign in with Google</button><form id="emailLoginForm" style="margin-top:20px"><div class="field"><label for="loginEmail">Email</label><input id="loginEmail" type="email" required autocomplete="username"></div><div class="field"><label for="loginPassword">Password</label><input id="loginPassword" type="password" required autocomplete="current-password"></div><button id="emailLoginButton" class="btn primary" type="submit" disabled>Sign in with email</button></form><p id="authHelp" class="muted" role="status">Loading sign-in…</p></section>
 <div id="workspace" hidden><section id="stats" class="stats" aria-label="My report counts" style="margin-top:25px"></section><p class="count-note">Only your reports are included. Each report records one status selected by you.</p><section class="panel"><div class="panel-top"><div><h2>My student reports</h2><p>Choose a status first, then enter only the relevant details.</p></div><span id="recordCount" class="muted"></span></div><div class="filters"><input id="search" type="search" placeholder="Search student name…" aria-label="Search my reports"><select id="classFilter" aria-label="Class"><option value="">All classes</option></select><select id="subjectFilter" aria-label="Subject"><option value="">All subjects</option></select><select id="statusFilter" aria-label="Status"><option value="">All statuses</option></select><button class="btn" id="clear">Clear</button></div><div class="table-wrap"><table><caption class="visually-hidden">My recuperation reports</caption><thead><tr><th scope="col">Student</th><th scope="col">Class / subject</th><th scope="col">Status</th><th scope="col">Report details</th><th scope="col">Actions</th></tr></thead><tbody id="rows"></tbody></table></div><div id="empty" class="empty" hidden>No reports yet. Add your first student report.</div><div class="panel-foot" id="tableFoot">Reports belong to the signed-in teacher.</div></section></div>
 </section><footer><span>EAR Teacher Portal · CS Club</span></footer></main>
 <dialog id="editor" aria-labelledby="editorTitle"><div class="dialog-top"><div><h2 id="editorTitle">Add student report</h2><p class="muted">Start with the student's status.</p></div><button type="button" class="btn" id="closeX" aria-label="Close report">✕</button></div><form id="recordForm"><input type="hidden" id="reportId"><input type="hidden" id="revision"><div class="field" style="margin-top:20px"><label for="status">1. Student status</label><select id="status" required><option value="">Choose a status…</option></select></div><fieldset id="details" hidden disabled style="border:0;padding:0;margin:0"><legend class="visually-hidden">Student and report details</legend><div class="field"><label for="existing">2. Student</label><select id="existing"><option value="">Add a new student</option></select><small class="muted">Choose a student from your previous reports to fill their details.</small></div><div class="form-grid"><div class="field"><label for="name">Student name</label><input id="name" required maxlength="100" autocomplete="off"></div><div class="field"><label for="className">Class</label><input id="className" list="classChoices" required maxlength="30" placeholder="10A" autocomplete="off"><datalist id="classChoices"></datalist></div><div class="field"><label for="subject">Subject</label><input id="subject" list="subjectChoices" required maxlength="80" autocomplete="off"><datalist id="subjectChoices"></datalist></div></div><div id="gradeFields"><div class="field"><label for="grade">3. Current grade (0–100)</label><input id="grade" type="number" min="0" max="100" step="0.1"></div></div><div id="absenceFields" class="form-grid" hidden><div class="field"><label for="absences">3. Classes missed</label><input id="absences" type="number" min="0" max="10000" step="1"></div><div class="field"><label for="total">Total classes held</label><input id="total" type="number" min="1" max="10000" step="1"></div></div><p id="calculation" class="muted" aria-live="polite"></p><p class="count-note">Your selected status is recorded as entered. Use your school's rules to choose it.</p></fieldset><p id="formError" class="error" role="alert" hidden></p><div class="actions"><label style="margin-right:auto;font-weight:400"><input type="checkbox" id="addAnother"> Add another after saving</label><button type="button" class="btn" id="cancel">Cancel</button><button id="save" class="btn primary" type="submit" disabled>Save report</button></div></form></dialog>
@@ -28,10 +43,12 @@ let user=null,reports=[],demoMode=false,pendingRemove=null,lastFocus=null,busy=f
 let defaults={className:'',subject:'',total:''};
 function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
 function say(text,error=false){$('message').textContent=text;$('message').className=error?'error':'toast';$('message').hidden=false;}
-function setView(v){for(const n of ['recuperation','tests']){$(n).hidden=n!==v;$('tab-'+n).setAttribute('aria-selected',String(n===v));$('tab-'+n).tabIndex=n===v?0:-1;}}
+function setView(v){if(v==='admin'&&!isAdmin())return;for(const n of ['recuperation','tests','admin']){$(n).hidden=n!==v;$('tab-'+n).setAttribute('aria-selected',String(n===v));$('tab-'+n).tabIndex=n===v?0:-1;}}
 function badge(r){return '<span class="badge s'+r.status+'">'+esc(labels[r.status])+'</span>';}
 function own(){return user?reports.filter(r=>r.owner_id===user.id):[];}
-let auth,db,fb;
+let auth,db,fb,accountAuth;
+const ADMIN_EMAIL='lucas.zhou@ear.com.br';
+function isAdmin(account=auth?.currentUser){return !!account&&account.email===ADMIN_EMAIL&&account.emailVerified===true;}
 async function api(path,method='GET',body){
  const account=auth.currentUser;
  if(!account)throw Error('Please sign in again.');
@@ -52,7 +69,7 @@ async function api(path,method='GET',body){
   tx.set(ref,data);return {...data,id};
  });
 }
-function clearSession(){epoch++;user=null;reports=[];demoMode=false;defaults={className:'',subject:'',total:''};$('identity').textContent='';$('workspace').hidden=true;$('add').hidden=true;$('logout').hidden=true;$('login').hidden=false;$('rows').innerHTML='';$('stats').innerHTML='';$('recordForm').reset();$('editor').close();$('removeDialog').close();$('notice').hidden=true;pendingRemove=null;}
+function clearSession(){epoch++;$('tab-admin').hidden=true;setView('recuperation');$('emailLoginForm').reset();$('createAccountForm').reset();$('adminPasswordForm').reset();$('accountResult').hidden=true;$('adminPasswordResult').hidden=true;user=null;reports=[];demoMode=false;defaults={className:'',subject:'',total:''};$('identity').textContent='';$('workspace').hidden=true;$('add').hidden=true;$('logout').hidden=true;$('login').hidden=false;$('rows').innerHTML='';$('stats').innerHTML='';$('recordForm').reset();$('editor').close();$('removeDialog').close();$('notice').hidden=true;pendingRemove=null;}
 function enter(nextUser,nextReports,isDemo){epoch++;user=nextUser;reports=nextReports;demoMode=isDemo;$('login').hidden=true;$('workspace').hidden=false;$('add').hidden=false;$('logout').hidden=false;$('logout').textContent=isDemo?'Exit demo':'Sign out';$('identity').textContent=isDemo?'Fictional demo':nextUser.name;$('notice').hidden=!isDemo;$('notice').textContent='Fictional demo — changes last only in this tab. This is not teacher authentication. ';$('tableFoot').textContent=isDemo?'Fictional data only. Nothing in this demo is uploaded or saved.':'Your reports are checked against your signed-in account on the server.';for(const k of ['search','classFilter','subjectFilter','statusFilter'])$(k).value='';$('message').hidden=true;render();}
 function options(id,key,title){const el=$(id),old=el.value;el.innerHTML='<option value="">'+title+'</option>'+[...new Set(own().map(r=>r[key]))].sort().map(v=>'<option value="'+esc(v)+'">'+esc(v)+'</option>').join('');if([...el.options].some(o=>o.value===old))el.value=old;}
 function render(){const data=own();options('classFilter','className','All classes');options('subjectFilter','subject','All subjects');$('stats').innerHTML='<div class="stat total"><span>My reports</span><strong>'+data.length+'</strong><small>Only this teacher’s reports</small></div>'+labels.map((s,i)=>'<button class="stat s'+i+'" data-status="'+i+'"><span>'+['Grade recuperation','Grade warning','Absence recuperation','Absence warning'][i]+'</span><strong>'+data.filter(r=>r.status===i).length+'</strong><small>View reports ↗</small></button>').join('');renderTable();}
@@ -70,7 +87,7 @@ $('status').onchange=statusFields;for(const id of ['absences','total'])$(id).oni
 $('add').onclick=()=>openEditor();for(const id of ['cancel','closeX'])$(id).onclick=()=>{if(!busy)$('editor').close();};$('removeCancel').onclick=()=>{if(!busy)$('removeDialog').close();};for(const id of ['editor','removeDialog']){$(id).addEventListener('cancel',e=>{if(busy)e.preventDefault();});$(id).addEventListener('close',()=>{if(lastFocus?.isConnected)lastFocus.focus();});}
 for(const id of ['search','classFilter','subjectFilter','statusFilter'])$(id).oninput=renderTable;$('clear').onclick=()=>{for(const id of ['search','classFilter','subjectFilter','statusFilter'])$(id).value='';renderTable();};
 document.addEventListener('click',e=>{const el=e.target.closest('button');if(!el)return;if(el.dataset.view)setView(el.dataset.view);if(el.dataset.edit)openEditor(el.dataset.edit);if(el.dataset.remove)requestRemove(el.dataset.remove);if(el.dataset.status!==undefined){$('statusFilter').value=el.dataset.status;renderTable();}});
-document.querySelector('[role=tablist]').onkeydown=e=>{const tabs=[...document.querySelectorAll('[role=tab]')],i=tabs.indexOf(document.activeElement);if(i<0)return;const n=e.key==='ArrowRight'?(i+1)%2:e.key==='ArrowLeft'?(i+1)%2:e.key==='Home'?0:e.key==='End'?1:null;if(n!==null){e.preventDefault();setView(tabs[n].dataset.view);tabs[n].focus();}};
+document.querySelector('[role=tablist]').onkeydown=e=>{const tabs=[...document.querySelectorAll('[role=tab]:not([hidden])')],i=tabs.indexOf(document.activeElement);if(i<0)return;const n=e.key==='ArrowRight'?(i+1)%tabs.length:e.key==='ArrowLeft'?(i-1+tabs.length)%tabs.length:e.key==='Home'?0:e.key==='End'?tabs.length-1:null;if(n!==null){e.preventDefault();setView(tabs[n].dataset.view);tabs[n].focus();}};
 for(const id of ['status','statusFilter'])$(id).innerHTML+=labels.map((s,i)=>'<option value="'+i+'">'+s+'</option>').join('');
 
 // ===== REPLACE THESE VALUES WITH YOUR FIREBASE WEB APP CONFIG =====
@@ -90,6 +107,12 @@ const firebaseConfig = {
 };
 // ===== END CONFIGURATION =====
 function authError(err){
+ if(err.code==='auth/operation-not-allowed')return 'Enable Email/Password in Firebase Authentication > Sign-in method.';
+ if(err.code==='auth/email-already-in-use')return 'This email already has an account. Manage the existing account in Firebase Console.';
+ if(err.code==='auth/weak-password'||err.code==='auth/password-does-not-meet-requirements')return 'Choose a password that meets the Firebase password policy (at least 6 characters).';
+ if(err.code==='auth/invalid-credential')return 'The email or password is incorrect.';
+ if(err.code==='auth/requires-recent-login')return 'Sign out and sign in again, then retry this action.';
+
  if(err.code==='auth/popup-blocked')return 'Allow pop-ups for this website, then try again.';
  if(err.code==='auth/unauthorized-domain')return 'Add this website domain in Firebase Authentication > Settings > Authorized domains.';
  if(err.code==='permission-denied')return 'Access denied. Ask the administrator to check your teacher approval and Firestore rules.';
@@ -98,7 +121,6 @@ function authError(err){
 $('loginButton').onclick=async()=>{
  $('loginButton').disabled=true;
  try{
-  await fb.setPersistence(auth,fb.browserSessionPersistence);
   const provider=new fb.GoogleAuthProvider();
   provider.setCustomParameters({prompt:'select_account'});
   await fb.signInWithPopup(auth,provider);
@@ -110,6 +132,59 @@ $('logout').onclick=async()=>{
  try{await fb.signOut(auth);clearSession();say('Signed out.');}
  catch(err){say(authError(err),true);}
 };
+
+function adminResult(id,message,error=false){$(id).textContent=message;$(id).className=error?'error':'toast';$(id).hidden=false;}
+$('emailLoginForm').onsubmit=async e=>{
+ e.preventDefault();$('emailLoginButton').disabled=true;$('loginButton').disabled=true;
+ try{await fb.signInWithEmailAndPassword(auth,$('loginEmail').value.trim(),$('loginPassword').value);}
+ catch(err){say(authError(err),true);}
+ finally{$('loginPassword').value='';$('emailLoginButton').disabled=false;$('loginButton').disabled=false;}
+};
+$('adminPasswordForm').onsubmit=async e=>{
+ e.preventDefault();if(!isAdmin())return;
+ $('adminPasswordButton').disabled=true;
+ try{
+  const password=$('adminPassword').value;
+  if(password.length<6)throw Error('Use at least 6 characters.');
+  const account=auth.currentUser;
+  if(account.providerData.some(p=>p.providerId==='password'))await fb.updatePassword(account,password);
+  else await fb.linkWithCredential(account,fb.EmailAuthProvider.credential(account.email,password));
+  adminResult('adminPasswordResult','Password saved. You can now sign in with your email and password.');
+ }catch(err){adminResult('adminPasswordResult',authError(err),true);}
+ finally{$('adminPassword').value='';$('adminPasswordButton').disabled=false;}
+};
+$('createAccountForm').onsubmit=async e=>{
+ e.preventDefault();if(!isAdmin()||busy)return;
+ const adminUid=auth.currentUser.uid;
+ const name=$('newTeacherName').value.trim(),email=$('newTeacherEmail').value.trim(),password=$('newTeacherPassword').value;
+ if(!name||password.length<6){adminResult('accountResult','Enter a name and a password of at least 6 characters.',true);return;}
+ if(email.toLowerCase()===ADMIN_EMAIL){adminResult('accountResult','Use “Set my admin password” for your own account.',true);return;}
+ $('accountFields').disabled=true;setBusy(true);$('accountResult').hidden=true;
+ let created=null,approved=false;
+ try{
+  // A separate, in-memory Auth instance keeps the administrator signed in.
+  const result=await fb.createUserWithEmailAndPassword(accountAuth,email,password);
+  created=result.user;
+  if(!isAdmin()||auth.currentUser.uid!==adminUid)throw Error('Admin session changed. Sign in again.');
+  await fb.setDoc(fb.doc(db,'teachers',created.uid),{
+   active:true,name,email:created.email,createdBy:adminUid,createdAt:fb.serverTimestamp()
+  });
+  approved=true;
+  $('createAccountForm').reset();
+  adminResult('accountResult','Account created for '+email+'. This teacher can now sign in using email and password.');
+ }catch(err){
+  let message=authError(err);
+  if(created&&!approved){
+   try{await fb.deleteUser(created);}
+   catch(cleanupError){message+=' The login account may still exist but access was not confirmed. Check Firebase Authentication and teachers/'+created.uid+' before retrying.';}
+  }
+  adminResult('accountResult',message,true);
+ }finally{
+  try{await fb.signOut(accountAuth);}catch(err){}
+  $('newTeacherPassword').value='';$('accountFields').disabled=false;setBusy(false);
+ }
+};
+
 async function startFirebase(){
  if(Object.values(firebaseConfig).some(v=>v.startsWith('YOUR_'))){
   $('authHelp').textContent='Setup needed: replace the six Firebase configuration variables in index.html.';
@@ -128,15 +203,23 @@ async function startFirebase(){
   fb={...authentication,...firestore};
   const instance=app.initializeApp(firebaseConfig);
   auth=fb.getAuth(instance);db=fb.getFirestore(instance);
+  accountAuth=fb.getAuth(app.initializeApp(firebaseConfig,'teacher-account-creation'));
+  await fb.setPersistence(auth,fb.browserSessionPersistence);
+  await fb.setPersistence(accountAuth,fb.inMemoryPersistence);
+  $('emailLoginButton').disabled=false;
   $('authHelp').textContent='Only approved teachers can access reports.';
   $('loginButton').disabled=false;
   fb.onAuthStateChanged(auth,async account=>{
    clearSession();
    const currentEpoch=epoch;
    if(!account)return;
+   $('emailLoginButton').disabled=true;
    $('loginButton').disabled=true;
    $('authHelp').textContent='Checking teacher access…';
    try{
+    if(isAdmin(account)){
+     await fb.setDoc(fb.doc(db,'teachers',account.uid),{active:true},{merge:true});
+    }
     const approval=await fb.getDoc(fb.doc(db,'teachers',account.uid));
     if(!approval.exists()||approval.data().active!==true){
      throw Error('Teacher approval needed. Your UID: '+account.uid+'. Ask the administrator to create teachers/'+account.uid+' with active set to true (boolean).');
@@ -144,6 +227,7 @@ async function startFirebase(){
     const snapshot=await fb.getDocs(fb.collection(db,'teachers',account.uid,'reports'));
     if(epoch!==currentEpoch||auth.currentUser?.uid!==account.uid)return;
     enter({id:account.uid,name:account.displayName||account.email},snapshot.docs.map(d=>({...d.data(),id:d.id})),false);
+    $('tab-admin').hidden=!isAdmin(account);
     $('tableFoot').textContent='Your reports are stored in your private Firestore workspace.';
    }catch(err){
     if(epoch!==currentEpoch)return;
@@ -151,6 +235,7 @@ async function startFirebase(){
     say(authError(err),true);
    }finally{
     $('loginButton').disabled=false;
+    $('emailLoginButton').disabled=false;
     $('authHelp').textContent='Only approved teachers can access reports.';
    }
   });
