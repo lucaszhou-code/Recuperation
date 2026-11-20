@@ -28,7 +28,7 @@
       }
     ],
     "predeploy": [
-      "node -e \"require('fs').mkdirSync('firebase-public',{recursive:true});require('fs').copyFileSync('index.html','firebase-public/index.html')\""
+      "node -e \"require('fs').mkdirSync('firebase-public',{recursive:true});for(const f of ['index.html','ear-school-icon.svg']) require('fs').copyFileSync(f,'firebase-public/'+f)\""
     ]
   }
 }
