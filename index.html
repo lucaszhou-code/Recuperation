@@ -85,6 +85,7 @@ setTimeout(finishStartup,10000);
 <script>
 (() => {
  const translations={
+ "Signed out after 5 minutes of inactivity.":"Sua sessão foi encerrada após 5 minutos de inatividade.",
  "Contact us":"Fale conosco",
  "CONTACT US":"FALE CONOSCO","Questions about our school?":"Dúvidas sobre a nossa escola?","Send us a message.":"Envie uma mensagem.","Name":"Nome","Message":"Mensagem","Continue in your email app to send your message.":"Para enviar a mensagem, continue no seu aplicativo de e-mail.","Open email draft":"Abrir rascunho de e-mail",
  "Recuperation": "Recuperação",
@@ -321,7 +322,63 @@ async function api(path,method='GET',body){
   tx.set(ref,data);return {...data,id};
  });
 }
-function clearSession(){epoch++;$('tab-admin').hidden=true;setView('recuperation');$('emailLoginForm').reset();$('createAccountForm').reset();$('adminPasswordForm').reset();$('accountResult').hidden=true;$('adminPasswordResult').hidden=true;user=null;reports=[];demoMode=false;defaults={className:'',subject:'',total:''};$('greeting').textContent='';$('workspace').hidden=true;$('add').hidden=true;$('logout').hidden=true;$('login').hidden=false;$('rows').innerHTML='';$('stats').innerHTML='';$('recordForm').reset();$('editor').close();$('removeDialog').close();$('notice').hidden=true;pendingRemove=null;}
+const idleLimit=5*60*1000;
+const idleKey='earPortalLastActivity';
+let idleAccount=null, lastActivity=0, idleTimer;
+
+function stopIdleWatch(){
+ clearTimeout(idleTimer);
+ idleAccount=null;
+}
+function rememberActivity(){
+ try{sessionStorage.setItem(idleKey,JSON.stringify([idleAccount,lastActivity]));}catch{}
+}
+async function expireIdleSession(){
+ stopIdleWatch();
+ clearSession();
+ document.querySelectorAll('dialog[open]').forEach(dialog=>dialog.close());
+ try{
+  await fb.signOut(auth);
+  say('Signed out after 5 minutes of inactivity.');
+ }catch(err){say(authError(err),true);}
+ finally{finishStartup();}
+}
+function checkIdle(){
+ if(!idleAccount)return;
+ const remaining=lastActivity+idleLimit-Date.now();
+ clearTimeout(idleTimer);
+ if(remaining<=0){expireIdleSession();return;}
+ idleTimer=setTimeout(checkIdle,remaining);
+}
+function startIdleWatch(uid){
+ idleAccount=uid;
+ lastActivity=Date.now();
+ try{
+  const saved=JSON.parse(sessionStorage.getItem(idleKey));
+  if(saved?.[0]===uid && Number.isFinite(saved[1]))lastActivity=Math.min(lastActivity,saved[1]);
+ }catch{}
+ rememberActivity();
+ checkIdle();
+ return idleAccount!==null;
+}
+function recordActivity(event){
+ if(!idleAccount || !event.isTrusted)return;
+ const elapsed=Date.now()-lastActivity;
+ if(elapsed>=idleLimit){checkIdle();return;}
+ lastActivity=Date.now();
+}
+for(const type of ['pointermove','pointerdown','keydown','wheel','touchmove','input']){
+ document.addEventListener(type,recordActivity,{capture:true,passive:true});
+}
+window.addEventListener('pagehide',()=>{if(idleAccount)rememberActivity();});
+window.addEventListener('pageshow',checkIdle);
+window.addEventListener('focus',checkIdle);
+document.addEventListener('visibilitychange',()=>{
+ if(document.hidden && idleAccount)rememberActivity();
+ else checkIdle();
+});
+
+function clearSession(){stopIdleWatch();epoch++;$('tab-admin').hidden=true;setView('recuperation');$('emailLoginForm').reset();$('createAccountForm').reset();$('adminPasswordForm').reset();$('accountResult').hidden=true;$('adminPasswordResult').hidden=true;user=null;reports=[];demoMode=false;defaults={className:'',subject:'',total:''};$('greeting').textContent='';$('workspace').hidden=true;$('add').hidden=true;$('logout').hidden=true;$('login').hidden=false;$('rows').innerHTML='';$('stats').innerHTML='';$('recordForm').reset();$('editor').close();$('removeDialog').close();$('notice').hidden=true;pendingRemove=null;}
 function teacherGreeting(name,hour=new Date().getHours()){
  const period=hour<12?'morning':hour<18?'afternoon':'evening';
  const label=(name||'').trim();
@@ -472,7 +529,11 @@ async function startFirebase(){
   fb.onAuthStateChanged(auth,async account=>{
    clearSession();
    const currentEpoch=epoch;
-   if(!account){finishStartup();return;}
+   if(!account){
+    try{sessionStorage.removeItem(idleKey);}catch{}
+    finishStartup();return;
+   }
+   if(!startIdleWatch(account.uid))return;
    $('emailLoginButton').disabled=true;
    $('loginButton').disabled=true;
    $('authHelp').textContent='Checking teacher access…';
